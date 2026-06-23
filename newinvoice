@@ -1,9 +1,108 @@
-#!/bin/zsh
+#!/usr/bin/env bash
 
-/Users/lynn/.mac-config/ascii-table
+# ===============================
+#    ASCII TABLE GENERATION 
+# ===============================
+#
+generate_invoice_table() {
+    local LC_ALL=C
+    local items=()
+    local descriptions=()
+    local amounts=()
+    local total_amount=0
+    local num_rows
 
-read "recipient_name?Enter Recipient Name: "
-read "recipient_email?Enter Recipient Email: "
+    # Helper for drawing lines
+    repeat_char() {
+        local char=$1
+        local count=$2
+        printf -v filler "%*s" "$count" ""
+        echo "${filler// /$char}"
+    }
+
+    # PROMPT 1: 
+    read -r -p "How many line-items would you like to add? " num_rows
+    if [[ ! $num_rows =~ ^[0-9]+$ ]]; then
+        echo "Please enter a valid number!" >&2
+        return 1
+    fi
+
+    local i=0
+    while (( i < num_rows )); do
+        # Redirecting informational text to stderr (>&2) so it isn't captured
+        echo -e "\nLINE-ITEM $((i + 1)):" >&2
+        read -r -p "Item: " item
+        read -r -p "Description: " descr
+        read -r -p "Amount (USD): " amount
+
+        if [[ ! $amount =~ ^[+-]?([0-9]+([.][0-9]*)?|[.][0-9]+)$ ]]; then
+            echo "Invalid amount. Please enter a valid number." >&2
+            continue
+        fi
+
+        local formatted_amount
+        formatted_amount=$(printf "$%.2f" "$amount")
+
+        local row_string="$item $descr $formatted_amount"
+        if (( ${#row_string} > 79 )); then
+            echo "Warning: This row contains more than 79 characters! Please enter the information again." >&2
+            continue
+        fi
+
+        items+=("$item")
+        descriptions+=("$descr")
+        amounts+=("$formatted_amount")
+        total_amount=$(awk "BEGIN {print $total_amount + $amount}")
+        ((i++))
+    done
+
+    # This actually goes to stdout to be captured by variable
+    # during invoice template generation
+    local h1="Item"
+    local h2="Description"
+    local h3="Amount (USD)"
+
+    local w1=${#h1}
+    local w2=${#h2}
+    local w3=${#h3}
+
+    for (( i=0; i<${#items[@]}; i++ )); do
+        (( ${#items[i]} > w1 )) && w1=${#items[i]}
+        (( ${#descriptions[i]} > w2 )) && w2=${#descriptions[i]}
+        (( ${#amounts[i]} > w3 )) && w3=${#amounts[i]}
+    done
+
+    local sep_top_bottom="+$(repeat_char "-" "$((w1 + 2))")+$(repeat_char "-" "$((w2 + 2))")+$(repeat_char "-" "$((w3 + 2))")+"
+    local sep_header="+$(repeat_char "=" "$((w1 + 2))")+$(repeat_char "=" "$((w2 + 2))")+$(repeat_char "=" "$((w3 + 2))")+"
+
+    # Print the main table
+    echo "$sep_top_bottom"
+    printf "| %-*s | %-*s | %-*s |\n" "$w1" "$h1" "$w2" "$h2" "$w3" "$h3"
+    echo "$sep_header"
+    
+    if (( num_rows > 0 )); then
+        for (( i=0; i<${#items[@]}; i++ )); do
+            printf "| %-*s | %-*s | %-*s |\n" "$w1" "${items[i]}" "$w2" "${descriptions[i]}" "$w3" "${amounts[i]}"
+            echo "$sep_top_bottom"
+        done
+    else
+        echo "$sep_top_bottom"
+    fi
+
+    local formatted_total
+    formatted_total=$(printf "$%.2f" "$total_amount")
+    printf "\nTOTAL  %s\n" "$formatted_total"
+}
+
+# ====================================
+#          INVOICE GENERATION
+# ====================================
+
+read -p "Enter Recipient Name: " recipient_name
+read -p "Enter Recipient Email: " recipient_email
+
+ASCII_TABLE=$(generate_invoice_table)
+
 
 today=$(date +"%Y-%m-%d")
 filename="${today}-invoice.txt"
@@ -28,7 +127,7 @@ To: $recipient_name
 Email: $recipient_email
 
 
-#{PASTE ASCII HERE}
+"$ASCII_TABLE"
 
 
 
