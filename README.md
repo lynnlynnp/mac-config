@@ -4,7 +4,7 @@ Hi! This repository contains my personal macOS configuration files, shell script
 
 By adding `~/.mac-config` to the system `$PATH`, all the custom scripts in this repository are immediately available as global commands.
 
-```
+```bash
 .
 ├── README.md
 ├── coding-utils/ # Utilities & shortcuts used for coding
