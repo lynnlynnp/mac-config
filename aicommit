@@ -1,11 +1,9 @@
 #!/usr/bin/env bash
 
 # Summarize git changes with Fabric
-# Usage: aicommit [FILE]
+# Usage: aicommit (automatically detect changed files)
 
 set -e
-
-FILE=$1
 
 FABRIC_BIN="$HOME/.local/bin/fabric"
 
@@ -14,26 +12,25 @@ if [[ ! -x "$FABRIC_BIN" ]]; then
   exit 1
 fi
 
-# Read `git diff` output
-if [[ -n "$FILE" ]]; then
-	DIFF_OUTPUT=$(git diff "$FILE")
-else
-	DIFF_OUTPUT=$(git diff) # Reads `git diff` for entire repo
-fi
+# Get the list of modified files (unstaged)
+FILES=$(git diff --name-only)
 
 # Exit if there are no changes
-if [[ -z "$DIFF_OUTPUT" ]]; then
-	echo "🌱 No changes to summarise..."
-	exit 0
+if [[ -z "$FILES" ]]; then
+  echo "🌱 No changes to summarise..."
+  exit 0
 fi
 
-COMMIT_MESSAGE=$(echo "$DIFF_OUTPUT" | fabric -p summarize_git_diff)
+# Get the diff of changed files to pass to Fabric
+DIFF_OUTPUT=$(git diff)
+COMMIT_MESSAGE=$(echo "$DIFF_OUTPUT" | "$FABRIC_BIN" -p summarize_git_diff)
 
 echo ""
-echo "💾 Commiting changes with message:"
+echo "💾 Committing changes with message:"
+echo "-----------------------------------"
 echo "$COMMIT_MESSAGE"
+echo "-----------------------------------"
 echo ""
 
-git add "$FILE" && git commit -m "$COMMIT_MESSAGE" 
-
-
+echo "$FILES" | xargs git add
+git commit -m "$COMMIT_MESSAGE"
