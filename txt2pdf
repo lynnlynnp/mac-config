@@ -1,14 +1,15 @@
-#!/bin/zsh
+#!/usr/bin/env bash
 
 input_file="$1"
 
-echo "Opening $input_file, applying formatting, and saving as PDF..."
+echo "Opening $input_file and saving as PDF..."
 soffice --norestore "$input_file" "macro:///Standard.Module1.ApplyFormattingAndSaveAsPDF" &
 
+# This sleep is necessesary to prevent LibreOffice from being
+# shutdown before the conversion is finished
 sleep 3
 
 pkill soffice
 pkill soffice.bin
 
-echo "Done! Thanks for sotpping by."
-
+echo "Done! Saved to ${input_file//.txt/.pdf}"
