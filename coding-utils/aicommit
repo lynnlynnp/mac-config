@@ -4,6 +4,7 @@
 # Usage: aicommit (automatically detect changed files)
 
 ORANGE='\033[38;5;202m'
+NC='\033[0m'
 
 set -e
 
