@@ -3,6 +3,8 @@
 # Summarize git changes with Fabric
 # Usage: aicommit (automatically detect changed files)
 
+ORANGE='\033[38;5;202m'
+
 set -e
 
 FABRIC_BIN="$HOME/.local/bin/fabric"
@@ -13,13 +15,15 @@ if [[ ! -x "$FABRIC_BIN" ]]; then
 fi
 
 # Get the list of modified files (unstaged)
-FILES=$(git diff --name-only)
+FILES=$(git status --porcelain | cut -c 4-)
 
 # Exit if there are no changes
 if [[ -z "$FILES" ]]; then
   echo "🌱 No changes to summarise..."
   exit 0
 fi
+  echo "🔮 Summarising changes for:"
+  printf "${ORANGE}   %s\n" ${FILES}
 
 # Get the diff of changed files to pass to Fabric
 DIFF_OUTPUT=$(git diff)
